@@ -10,9 +10,32 @@ import json
 import copy
 from import_txt import *
 
-# TODO change timestamp origin
-max_timestamp = 1516449782
-min_timestamp = 1399068000
+
+
+def build_min_and_max_timestamp(attributeName, dbName, tableName, timeStrp):
+    conn = sqlite3.connect(dbName)
+    c = conn.cursor()
+    print("connect db successfully")
+    sql = "SELECT min([" + attributeName + "]), max([" + attributeName + "]) from " + tableName
+    print(sql)
+    cursor = c.execute(sql)
+    for row in cursor:
+        minValue = row[0] 
+        maxValue = row[1]
+        
+    conn.close()
+    try:
+        minTimeStr = minValue.split(".")[0]
+        minTime = datetime.datetime.strptime(minTimeStr, timeStrp)
+        minTimeStamp = int(time.mktime(minTime.timetuple()))
+        maxTimeStr = maxValue.split(".")[0]
+        maxTime = datetime.datetime.strptime(maxTimeStr, timeStrp)
+        maxTimeStamp = int(time.mktime(maxTime.timetuple()))
+    except ValueError:
+        print("minTimeStr",minTimeStr, " maxTimeStr",maxTimeStr)
+    return minTimeStamp, maxTimeStamp
+    
+
 def build_min_and_max_value(attributeName, dbName, tableName):
     conn = sqlite3.connect(dbName)
     c = conn.cursor()
@@ -125,7 +148,7 @@ def get_event_number(dbName, tableName):
 
     cursor = c.execute(sql)
     for row in cursor:
-        print("event number: " + row[0])
+        print("event number: ",  row[0])
         return row[0]
 
 
@@ -145,22 +168,23 @@ def load_basic_data_from_db(dbName, tableName, useClassAttributeList, useFloatAt
     return classAttributeToIdDict,minValueDict,maxValueDict
 
 
-def load_data_from_db(limitNum, offsetNum, num_steps, defaultAtributeList, activityAttributeList, caseAttributeNameList, useTimeAttributeList, useBooleanAttributeList, useFloatAttributeList, useClassAttributeList, caseColumnName, timeColumnName, idColumnName, dbName, tableName, timeStrp):
+def load_data_from_db(num_steps, defaultAtributeList, activityAttributeList, caseAttributeNameList, useTimeAttributeList, useBooleanAttributeList, useFloatAttributeList, useClassAttributeList, caseColumnName, timeColumnName, idColumnName, dbName, tableName, timeStrp):
 
     #classAttributeToIdDict = load_same_data_from_db()
-    #classAttributeToIdDict, minValueDict, maxValueDict  = load_basic_data_from_db(dbName, tableName, useClassAttributeList, useFloatAttributeList)
-    classAttributeToIdDict, minValueDict, maxValueDict  = load_same_data_from_txt(dbName + ".txt")
+    classAttributeToIdDict, minValueDict, maxValueDict  = load_basic_data_from_db(dbName, tableName, useClassAttributeList, useFloatAttributeList)
+    min_timestamp, max_timestamp = build_min_and_max_timestamp(useTimeAttributeList[0], dbName, tableName, timeStrp)
+    #classAttributeToIdDict, minValueDict, maxValueDict  = load_same_data_from_txt(dbName + ".txt")
 
     targetList = defaultAtributeList + activityAttributeList + caseAttributeNameList
     ansStr, attrName2IdDict, id2attrNameDict = attributeSqlStr(targetList)
     
-    eventNumber = limitNum
+    eventNumber = get_event_number(dbName, tableName)
 
     conn = sqlite3.connect(dbName)
     c = conn.cursor()
     print("connect db successfully")
 
-    sql = "SELECT " + ansStr + " from " + tableName + " order by [" +  timeColumnName + "], [" + caseColumnName + "], [" + idColumnName + "] LIMIT " + str(limitNum) + " OFFSET " + str(offsetNum)
+    sql = "SELECT " + ansStr + " from " + tableName + " order by [" +  timeColumnName + "], [" + caseColumnName + "], [" + idColumnName + "]"
     print("sql:",sql)
     cursor = c.execute(sql)
     
