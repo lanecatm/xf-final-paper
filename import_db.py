@@ -70,6 +70,27 @@ def build_attribute_to_id_dict(attributeName, dbName, tableName):
     print(activity_to_id)
     return activity_to_id
 
+def find_case_end_time(caseColumnName, useTimeAttributeList, dbName, tableName, timeStrp):
+    caseEndTimeDict = {}
+    conn = sqlite3.connect(dbName)
+    c = conn.cursor()
+    #print("connect db successfully")
+    sql = "SELECT [" + caseColumnName + "], MAX([" + useTimeAttributeList[0] + "]) FROM " + tableName + " group by [" + caseColumnName +"]"
+    print(sql)
+    cursor = c.execute(sql)
+    for row in cursor:
+        caseId = row[0]
+        maxValue = row[1]
+        maxTimeStr = maxValue.split(".")[0]
+        maxTime = datetime.datetime.strptime(maxTimeStr, timeStrp)
+        maxTimeStamp = int(time.mktime(maxTime.timetuple()))
+        caseEndTimeDict[caseId] = maxTimeStamp
+    conn.close()
+    #print("maxTimeStamp",maxTimeStamp)
+    print(caseEndTimeDict[caseId])
+    return caseEndTimeDict
+
+
 
 def attributeSqlStr(targetList):
     attrName2IdDict = {}
@@ -189,6 +210,7 @@ def load_data_from_db(num_steps, defaultAtributeList, activityAttributeList, cas
     cursor = c.execute(sql)
     
     caseActivityDict = {}
+    caseEndTimeDict = find_case_end_time(caseColumnName, useTimeAttributeList, dbName, tableName, timeStrp)
     
     vocabulary = len(useTimeAttributeList) + len(useBooleanAttributeList) + len(useFloatAttributeList)
     for attr in useClassAttributeList:
@@ -201,6 +223,7 @@ def load_data_from_db(num_steps, defaultAtributeList, activityAttributeList, cas
     rowIndex = 1
     timeOrderEventsArrayIndex = 0
     overNumStepEventNumber = 0
+    lessNumEventNumber = 0
     for row in cursor:
         if (rowIndex % 10000 == 0):
             print("input ", rowIndex)
@@ -217,12 +240,20 @@ def load_data_from_db(num_steps, defaultAtributeList, activityAttributeList, cas
             # add event and label to list
             if len(caseActivityDict[caseName]) > num_steps:
                 overNumStepEventNumber += 1
+            elif len(caseActivityDict[caseName]) < 5:
+                lessNumEventNumber += 1
             else:
                 # TODO check
                 nowFeatureArray = np.array(caseActivityDict[caseName])
 
                 timeOrderEventsArray[timeOrderEventsArrayIndex, : nowFeatureArray.shape[0], : ] = nowFeatureArray[:,:]
-                timeOrderLabelArray[timeOrderEventsArrayIndex] = (featureTimeStamp - min_timestamp) / float(max_timestamp - min_timestamp)
+                caseEndTimeStamp = caseEndTimeDict[caseName]
+                if caseEndTimeStamp < featureTimeStamp:
+                    print("case end time error")
+                timeOrderLabelArray[timeOrderEventsArrayIndex] = (caseEndTimeStamp - featureTimeStamp) / 86400.0
+                #timeOrderLabelArray[timeOrderEventsArrayIndex] = (featureTimeStamp - min_timestamp) / float(60*60)
+                #print(timeOrderLabelArray[timeOrderEventsArrayIndex])
+                #input()
                 timeOrderEventsArrayIndex += 1
 
         caseActivityDict[caseName].append(featureArray)
@@ -236,8 +267,14 @@ def load_data_from_db(num_steps, defaultAtributeList, activityAttributeList, cas
     print(len(caseActivityDict[caseName]))
 
     print("overNumStepEventNumber:", overNumStepEventNumber)
+    print("lessNumEventNumber:", lessNumEventNumber)
 
     # TODO delete final zeros in timeOrderEventsArray and timeOrderLabelArray
+    timeOrderEventsArray = timeOrderEventsArray[:timeOrderEventsArrayIndex,:,:]
+    timeOrderLabelArray = timeOrderLabelArray[:timeOrderEventsArrayIndex]
+    print("timeOrderLabelArray", timeOrderLabelArray[-1])
+    print("timeOrderLabelArray", timeOrderLabelArray[-2])
+    print("timeOrderLabelArray", timeOrderLabelArray[0])
 
     return caseActivityDict, vocabulary, timeOrderEventsArray, timeOrderLabelArray
 

@@ -30,11 +30,10 @@ from import_txt import *
 
 data_path = "./"
 batch_size = 128
-num_epochs = 5
 num_steps = 100
 
 use_dropout=True
-epoch_num = 5
+epoch_num = 2
 
 parser = argparse.ArgumentParser()
 parser.add_argument('run_opt', type=int, default=1, help='An integer: 1 to train, 2 to test')
@@ -74,8 +73,8 @@ caseActivityDict, vocabulary, timeOrderEventsArray, timeOrderLabelArray = load_d
 train_num = int(timeOrderEventsArray.shape[0] * 0.8)
 train_X = timeOrderEventsArray[:train_num,:,:]
 test_X = timeOrderEventsArray[train_num:,:,:]
-train_y = timeOrderEventsArray[:train_num]
-test_y = timeOrderEventsArray[train_num:]
+train_y = timeOrderLabelArray[:train_num]
+test_y = timeOrderLabelArray[train_num:]
 
 print("begin model")
 
@@ -84,14 +83,19 @@ model = Sequential()
 #model.add(Embedding(vocabulary, hidden_size, input_length=num_steps, mask_zero = True))
 model.add(Masking(mask_value=0,input_shape=(num_steps, vocabulary)))
 model.add(LSTM(hidden_size, return_sequences=True, input_shape=(train_X.shape[1], train_X.shape[2])))
-#model.add(LSTM(hidden_size, return_sequences=True, input_shape=(train_X.shape[1], train_X.shape[2])))
 if use_dropout:
     model.add(Dropout(0.5))
-model.add(TimeDistributed(Dense(vocabulary)))
-model.add(Activation('softmax'))
+#model.add(Dense(hidden_size2))
+#model.add(Activation('relu'))
+model.add(LSTM(hidden_size, return_sequences=False))
+if use_dropout:
+    model.add(Dropout(0.5))
+#model.add(TimeDistributed(Dense(vocabulary)))
+model.add(Dense(1))
+model.add(Activation('linear'))
 
 optimizer = Adam()
-model.compile(loss=losses.mean_absolute_error, optimizer='adam', metrics=['MAE'])
+model.compile(loss=losses.mean_squared_error, optimizer='adam', metrics=['MAE','MSE','MAPE','MSLE'])
 print("end model")
 
 print(model.summary())
@@ -105,7 +109,9 @@ if args.run_opt == 1:
     # model.fit_generator(train_data_generator.generate(), 2000, num_epochs,
     #                     validation_data=valid_data_generator.generate(),
     #                     validation_steps=10)
-    history = model.fit(train_X, train_y, epochs=epoch_num, batch_size=batch_size, validation_data=(test_X, test_y), verbose=1, shuffle=False)
+    history = model.fit(train_X, train_y, epochs=epoch_num, batch_size=batch_size, validation_data=(test_X, test_y), verbose=1, shuffle=True)
+
+    model.save('my_model.h5')
     #model.save(data_path + "final_model.hdf5")
 
 
