@@ -1,13 +1,16 @@
 import json
 import os
 
-def save_data_from_db(dataList, filePath = "./tmp_data.txt"):
+
+def save_data_from_db(dataList, dirPath = "./", description = "", version = "0"):
+    filePath = dirPath + description + "_V" + version + ".txt"
     tJson = json.dumps(dataList)
     with open(filePath, 'w') as f:
         f.write(tJson)
     return
 
-def load_same_data_from_txt(filePath = "./tmp_data.txt"):
+def load_same_data_from_txt(dirPath = "./", description = "", version = "0"):
+    filePath = dirPath + description + "_V" + version + ".txt"
     with open(filePath, 'r') as f:
         tJson = f.read()
         dataList = json.loads(tJson)

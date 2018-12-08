@@ -33,7 +33,7 @@ batch_size = 128
 num_steps = 100
 
 use_dropout=True
-epoch_num = 2
+epoch_num = 6
 
 parser = argparse.ArgumentParser()
 parser.add_argument('run_opt', type=int, default=1, help='An integer: 1 to train, 2 to test')
@@ -70,7 +70,7 @@ caseActivityDict, vocabulary, timeOrderEventsArray, timeOrderLabelArray = load_d
 #print(caseActivityDict["5ceab127a2ec35a9"])
 
 
-train_num = int(timeOrderEventsArray.shape[0] * 0.8)
+train_num = int(timeOrderEventsArray.shape[0] * 0.9)
 train_X = timeOrderEventsArray[:train_num,:,:]
 test_X = timeOrderEventsArray[train_num:,:,:]
 train_y = timeOrderLabelArray[:train_num]
@@ -99,7 +99,7 @@ model.compile(loss=losses.mean_squared_error, optimizer='adam', metrics=['MAE','
 print("end model")
 
 print(model.summary())
-#checkpointer = ModelCheckpoint(filepath=data_path + '/model-{epoch:02d}.hdf5', verbose=1)
+checkpointer = ModelCheckpoint(filepath=data_path + '/bpi2012_{epoch:02d}_' + str(batch_size) + 'predict_left_timev2' + '.hdf5', verbose=1)
 
 
 if args.run_opt == 1:
@@ -109,10 +109,25 @@ if args.run_opt == 1:
     # model.fit_generator(train_data_generator.generate(), 2000, num_epochs,
     #                     validation_data=valid_data_generator.generate(),
     #                     validation_steps=10)
-    history = model.fit(train_X, train_y, epochs=epoch_num, batch_size=batch_size, validation_data=(test_X, test_y), verbose=1, shuffle=True)
+    history = model.fit(train_X, train_y, epochs=epoch_num, batch_size=batch_size, validation_data=(test_X, test_y), verbose=1, shuffle=True, callbacks=[checkpointer])
 
-    model.save('my_model.h5')
+    modelNameStr = "bpi2012_" + str(epoch_num) + "_" + str(batch_size) + "_" + "predict_left_timev2" + ".h5"
+    model.save('modelNameStr')
     #model.save(data_path + "final_model.hdf5")
+elif args.run_opt == 2:
+    print("load model")
+    model = load_model("my_model_2012_minusstarttime.h5")
+
+    predictTrueNum = 0
+    predictFalseNum = 0
+    actualTrueNum = 0
+    actualFalseNum = 0
+    overTime = 30
+    predict_y = model.predict(test_X[0:200])
+    for i in range(predict_y.shape[0]):
+        print("actual:", test_y[i], " predict:", predict_y[i])
+
+
 
 
 
