@@ -216,7 +216,7 @@ def load_basic_data_from_db(dbName, tableName, useClassAttributeList, useFloatAt
     return classAttributeToIdDict,minValueDict,maxValueDict
 
 
-def load_data_from_db(num_steps, defaultAtributeList, activityAttributeList, caseAttributeNameList, useTimeAttributeList, useBooleanAttributeList, useFloatAttributeList, useClassAttributeList, caseColumnName, timeColumnName, idColumnName, dbName, tableName, timeStrp):
+def load_data_from_db(from_num, num_steps, defaultAtributeList, activityAttributeList, caseAttributeNameList, useTimeAttributeList, useBooleanAttributeList, useFloatAttributeList, useClassAttributeList, caseColumnName, timeColumnName, idColumnName, dbName, tableName, timeStrp):
 
     #classAttributeToIdDict = load_same_data_from_db()
     classAttributeToIdDict, minValueDict, maxValueDict  = load_basic_data_from_db(dbName, tableName, useClassAttributeList, useFloatAttributeList)
@@ -270,7 +270,7 @@ def load_data_from_db(num_steps, defaultAtributeList, activityAttributeList, cas
             # add event and label to list
             if len(caseActivityDict[caseName]) > num_steps:
                 overNumStepEventNumber += 1
-            elif len(caseActivityDict[caseName]) < startCalculateEventNum:
+            elif len(caseActivityDict[caseName]) < from_num:
                 lessNumEventNumber += 1
             else:
                 # TODO check
