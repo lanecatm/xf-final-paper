@@ -10,6 +10,7 @@ from keras.optimizers import Adam
 from keras.utils import to_categorical
 from keras.callbacks import ModelCheckpoint
 from keras.utils import np_utils
+from keras import regularizers
 from keras import losses
 
 
@@ -31,16 +32,29 @@ from import_txt import *
 data_path = "./"
 batch_size = 128
 num_steps = 100
+l2_num = 0.1
 
-use_dropout=True
-epoch_num = 6
+use_dropout=False
+epoch_num = 10
 
 parser = argparse.ArgumentParser()
+# python3 keras_lstm.py 1 --batch_size 256 --num_steps 100 --l2 0.5 --use_dropout True --epoch_num 10
 parser.add_argument('run_opt', type=int, default=1, help='An integer: 1 to train, 2 to test')
 parser.add_argument('--data_path', type=str, default=data_path, help='The full path of the training data')
+parser.add_argument('--batch_size', type=int, default=batch_size, help='batch_size')
+parser.add_argument('--num_steps', type=int, default=num_steps, help='num_steps')
+parser.add_argument('--l2', type=float, default=l2_num, help='l2')
+parser.add_argument('--use_dropout', type=bool, default=use_dropout, help='use_dropout')
+parser.add_argument('--epoch_num', type=int, default=epoch_num, help='epoch_num')
 args = parser.parse_args()
 if args.data_path:
     data_path = args.data_path
+    batch_size = args.batch_size
+    num_steps = args.num_steps
+    l2_num = args.l2
+    use_dropout = args.use_dropout
+    epoch_num = args.epoch_num
+
 
 
 
@@ -91,7 +105,9 @@ model.add(LSTM(hidden_size, return_sequences=False))
 if use_dropout:
     model.add(Dropout(0.5))
 #model.add(TimeDistributed(Dense(vocabulary)))
-model.add(Dense(1))
+#model.add(Dense(1))
+#model.add(Dense(1, kernel_regularizer=regularizers.l2(0.1), activity_regularizer=regularizers.l1(0.1)))
+model.add(Dense(1, kernel_regularizer=regularizers.l2(l2_num)))
 model.add(Activation('linear'))
 
 optimizer = Adam()
@@ -99,9 +115,10 @@ model.compile(loss=losses.mean_squared_error, optimizer='adam', metrics=['MAE','
 print("end model")
 
 print(model.summary())
-checkpointer = ModelCheckpoint(filepath=data_path + '/bpi2012_{epoch:02d}_' + str(batch_size) + 'predict_left_timev2' + '.hdf5', verbose=1)
+checkpointer = ModelCheckpoint(filepath=data_path + '/bpi2012_epoch_{epoch:02d}_batch_' + str(batch_size) + '_l2_' + str(l2_num) + '_predict_left_timev3' + '.hdf5', verbose=1)
 
 
+# v3 增加正则化表达
 if args.run_opt == 1:
     #model.fit_generator(train_data_generator.generate(), len(train_data)//(batch_size*num_steps), num_epochs,
     #                    validation_data=valid_data_generator.generate(),
@@ -109,9 +126,10 @@ if args.run_opt == 1:
     # model.fit_generator(train_data_generator.generate(), 2000, num_epochs,
     #                     validation_data=valid_data_generator.generate(),
     #                     validation_steps=10)
+    print("l2:", l2_num, " epoch:", epoch_num, "batch_size:", batch_size, " use_dropout:", use_dropout)
     history = model.fit(train_X, train_y, epochs=epoch_num, batch_size=batch_size, validation_data=(test_X, test_y), verbose=1, shuffle=True, callbacks=[checkpointer])
 
-    modelNameStr = "bpi2012_" + str(epoch_num) + "_" + str(batch_size) + "_" + "predict_left_timev2" + ".h5"
+    modelNameStr = "bpi2012_" + str(epoch_num) + "_" + str(batch_size) + "_" + "predict_left_timev3" + ".h5"
     model.save('modelNameStr')
     #model.save(data_path + "final_model.hdf5")
 elif args.run_opt == 2:
