@@ -60,8 +60,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
 rbm = BernoulliRBM(random_state=0, verbose=True)
 svc = LinearSVC()
-# rbm_features_classifier = Pipeline(
-#     steps=[('rbm', rbm), ('svc', svc)])
+
 rbm.learning_rate = 0.1
 rbm.n_iter = 5
 rbm.n_components = 10
@@ -90,21 +89,9 @@ if args.run_opt == 1:
     print(metrics.classification_report(test_y, y_pred))
     print('accuracy_score:', metrics.accuracy_score(test_y, y_pred))
 
-# elif args.run_opt == 2:
-#     print("load model")
-#     # model = load_model("my_model_2012_minusstarttime.h5")
-
-#     # predictTrueNum = 0
-#     # predictFalseNum = 0
-#     # actualTrueNum = 0
-#     # actualFalseNum = 0
-#     # overTime = 30
-#     # predict_y = model.predict(test_X[0:200])
-#     # for i in range(predict_y.shape[0]):
-#         # print("actual:", test_y[i], " predict:", predict_y[i])
-
-#     print('done')
-
+    print('rbm learning rate:', rbm.learning_rate)
+    print('rbm n itern', rbm.n_iter)
+    print('rbm n componets', rbm.n_components)
 
 
 
