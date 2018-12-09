@@ -248,6 +248,7 @@ def load_data_from_db(from_num, num_steps, defaultAtributeList, activityAttribut
 
     timeOrderEventsArray = np.zeros((eventNumber, num_steps, vocabulary))
     timeOrderLabelArray = np.zeros((eventNumber))
+    timeOrderNowTimeArray = np.zeros((eventNumber))
 
     rowIndex = 1
     timeOrderEventsArrayIndex = 0
@@ -282,6 +283,7 @@ def load_data_from_db(from_num, num_steps, defaultAtributeList, activityAttribut
                 #if caseEndTimeStamp < featureTimeStamp:
                 #    print("case end time error")
                 timeOrderLabelArray[timeOrderEventsArrayIndex] = (caseEndTimeStamp - nowFeatureTimeStamp) / 86400.0
+                timeOrderNowTimeArray[timeOrderEventsArrayIndex] = (nowFeatureTimeStamp - caseStartTimeDict[caseName]) / 86400.0
                 #timeOrderLabelArray[timeOrderEventsArrayIndex] = (featureTimeStamp - min_timestamp) / float(60*60)
                 #print(timeOrderLabelArray[timeOrderEventsArrayIndex])
                 #input()
@@ -304,10 +306,11 @@ def load_data_from_db(from_num, num_steps, defaultAtributeList, activityAttribut
     # TODO delete final zeros in timeOrderEventsArray and timeOrderLabelArray
     timeOrderEventsArray = timeOrderEventsArray[:timeOrderEventsArrayIndex,:,:]
     timeOrderLabelArray = timeOrderLabelArray[:timeOrderEventsArrayIndex]
+    timeOrderNowTimeArray = timeOrderNowTimeArray[:timeOrderEventsArrayIndex]
     print("timeOrderLabelArray", timeOrderLabelArray[-1])
     print("timeOrderLabelArray", timeOrderLabelArray[-2])
     print("timeOrderLabelArray", timeOrderLabelArray[0])
 
-    return caseActivityDict, vocabulary, timeOrderEventsArray, timeOrderLabelArray
+    return caseActivityDict, vocabulary, timeOrderEventsArray, timeOrderLabelArray, timeOrderNowTimeArray
 
 

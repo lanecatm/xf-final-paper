@@ -75,7 +75,7 @@ useFloatAttributeList = ['(case) AMOUNT_REQ']
 useClassAttributeList = ['Activity', 'Resource']
 
 
-caseActivityDict, vocabulary, timeOrderEventsArray, timeOrderLabelArray = load_data_from_db(from_num = from_num, num_steps = num_steps, 
+caseActivityDict, vocabulary, timeOrderEventsArray, timeOrderLabelArray, timeOrderNowTimeArray = load_data_from_db(from_num = from_num, num_steps = num_steps, 
         defaultAtributeList= defaultAtributeList, activityAttributeList = activityAttributeList , caseAttributeNameList = caseAttributeNameList, 
         useTimeAttributeList = useTimeAttributeList, useBooleanAttributeList = useBooleanAttributeList, useFloatAttributeList = useFloatAttributeList, useClassAttributeList = useClassAttributeList, 
         caseColumnName = "Case ID", timeColumnName = "Complete Timestamp", idColumnName = "ID", 
@@ -90,10 +90,12 @@ caseActivityDict, vocabulary, timeOrderEventsArray, timeOrderLabelArray = load_d
 
 
 train_num = int(timeOrderEventsArray.shape[0] * 0.9)
+test_num = int(timeOrderEventsArray.shape[0] * 0.9)
 train_X = timeOrderEventsArray[:train_num,:,:]
-test_X = timeOrderEventsArray[train_num:,:,:]
+test_X = timeOrderEventsArray[test_num:,:,:]
 train_y = timeOrderLabelArray[:train_num]
-test_y = timeOrderLabelArray[train_num:]
+test_y = timeOrderLabelArray[test_num:]
+test_nowtime = timeOrderNowTimeArray[test_num:]
 
 print("begin model")
 
@@ -116,6 +118,7 @@ model.add(Dense(1, kernel_regularizer=regularizers.l2(l2_num)))
 model.add(Activation('relu'))
 
 optimizer = Adam(clipvalue=0.5)
+#optimizer = Adam()
 model.compile(loss=losses.mean_squared_error, optimizer='adam', metrics=['MAE','MSE','MAPE','MSLE'])
 print("end model")
 
@@ -141,23 +144,86 @@ if args.run_opt == 1:
     #model.save(data_path + "final_model.hdf5")
 elif args.run_opt == 2:
     print("load model")
-    model = load_model("my_model_2012_minusstarttime.h5")
 
-    predictTrueNum = 0
-    predictFalseNum = 0
-    actualTrueNum = 0
-    actualFalseNum = 0
+
+    model = load_model("./model/bpi2012_epoch_05_batch_128_l2_0.01_from_num_5_use_dropout_True_predict_left_time_v3.hdf5")
+
+    TP = 0
+    FP = 0
+    FN = 0
+    TN = 0
+    P = 0
+    N = 0
     overTime = 30
-    predict_y = model.predict(test_X[0:200])
+    predict_y = model.predict(test_X[:],verbose = 1)
     for i in range(predict_y.shape[0]):
-        print("actual:", test_y[i], " predict:", predict_y[i])
+        if i % 10000 == 0:
+            print("now processing", i)
+
+        nowTime = test_nowtime[i]
+        leftTime = test_y[i]
+        actualAllTime = nowTime + leftTime
+        predictAllTime = nowTime + predict_y[i][0]
+
+        #print(nowTime, leftTime, actualAllTime, predictAllTime)
+        #print("actual:", test_y[i], " predict:", predict_y[i])
+        #input()
+
+        if actualAllTime > overTime and predictAllTime > overTime:
+            TN += 1
+            N += 1
+        elif actualAllTime < overTime and predictAllTime < overTime:
+            TP += 1
+            P += 1
+        elif actualAllTime > overTime and predictAllTime < overTime:
+            FP += 1
+            N += 1
+        else:
+            FN += 1
+            P += 1
+    print("TP:",TP," FP:",FP, " FN:", FN," TN:",TN)
+    print("positive accuracy:",(TP+TN)/float(P+N))
+    #print("error rate:",(FP+FN)/float(P+N))
+    print("positive recall:",(TP)/float(P))
+    print("negative recall:",(TN)/float(N))
+    print("positive precision:",(TP)/float(TP+FP))
+    print("negative precision:",(TN)/float(TN+FN))
+    print("positive f1:",2/(float(TP+FP)/TP + float(P)/TP))
+    print("negative f1:",2/(float(TN+FN)/TN + float(N)/TN))
+
+
+
+
 elif args.run_opt == 3:
     print("knn")
-    neigh = KNeighborsRegressor(n_neighbors=2)
+    neigh = KNeighborsRegressor(n_neighbors=2, weights='distance', metric='manhattan')
     train_X = train_X.reshape((train_X.shape[0],train_X.shape[1]*train_X.shape[2]))
+    #train_X = train_X[:10000]
+    #train_y = train_y[:10000]
+    test_X = test_X.reshape((test_X.shape[0],test_X.shape[1]*test_X.shape[2]))
+    print(train_X.shape, test_X.shape)
     neigh.fit(train_X, train_y)
+    print("finish fit")
+    predictError = 0
     for i in range(test_X.shape[0]):
-        predict_y = neigh.predict(test_X[i])
-        print("actual:", test_y[i], " predict:", predict_y)
+        predict_y = neigh.predict([test_X[i]])
+        #print("actual:", test_y[i], " predict:", predict_y)
+        predictError += abs(predict_y[0] - test_y[i])
+    print("mae:", predictError / float(test_X.shape[0]))
 
 
+elif args.run_opt == 4:
+    print("GradientBoostingRegressor")
+    import numpy as np
+    from sklearn.metrics import mean_squared_error
+    from sklearn.metrics import mean_absolute_error
+    from sklearn.datasets import make_friedman1
+    from sklearn.ensemble import GradientBoostingRegressor
+
+    train_X = train_X.reshape((train_X.shape[0],train_X.shape[1]*train_X.shape[2]))
+    train_X = train_X[:10000]
+    train_y = train_y[:10000]
+    test_X = test_X.reshape((test_X.shape[0],test_X.shape[1]*test_X.shape[2]))
+    est = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=1, random_state=0, loss='ls').fit(train_X, train_y)
+    print("mse:", mean_squared_error(test_y, est.predict(test_X)))
+    print("mae:", mean_absolute_error(test_y, est.predict(test_X)))
