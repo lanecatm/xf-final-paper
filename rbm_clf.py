@@ -135,12 +135,25 @@ elif args.run_opt == 2:
     print(clf)
 
     print('Testing ...')
-    y_pred = clf.predict(rbm.transform(test_X))
+    y_pred = clf.predict(test_X)
     print(metrics.classification_report(test_y, y_pred))
     print('accuracy_score:', metrics.accuracy_score(test_y, y_pred))
-    print('rbm learning rate:', rbm.learning_rate)
+    
+    print('\nrbm learning rate:', rbm.learning_rate)
     print('rbm n itern', rbm.n_iter)
     print('rbm n componets', rbm.n_components)
+elif args.run_opt == 3;
+    train_X = reshapeX[:train_num,:]
+    test_X = reshapeX[train_num:,:]
+    train_y = timeOrderLabelArray[:train_num]
+    test_y = timeOrderLabelArray[train_num:]
+    gc.collect()
+    # scan for best 
+    hiddens = [300, 100, 50]
+    iters = [50, 100, 800]
+    algos = ['logistic', 'randForest', 'LinearSVC']
+
+
 
 
 
