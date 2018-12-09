@@ -62,7 +62,7 @@ rbm = BernoulliRBM(random_state=0, verbose=True)
 svc = LinearSVC()
 rbm_features_classifier = Pipeline(
     steps=[('rbm', rbm), ('svc', svc)])
-rbm.learning_rate = 0.06
+rbm.learning_rate = 0.1
 rbm.n_iter = 20
 rbm.n_components = 50
 
@@ -78,6 +78,9 @@ if args.run_opt == 1:
     print(metrics.classification_report(test_y, y_pred))
     print('accuracy_score:', metrics.accuracy_score(test_y, y_pred))
 
+    print('rbm learning rate:', rbm.learning_rate)
+    print('rbm n itern', rbm.n_iter)
+    print('rbm n componets', rbm.n_components)
 elif args.run_opt == 2:
     print("load model")
     # model = load_model("my_model_2012_minusstarttime.h5")
