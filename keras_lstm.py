@@ -26,6 +26,9 @@ from import_db import *
 from import_txt import *
 import normal
 
+
+from sklearn.neighbors import KNeighborsRegressor
+
 """To run this code, you'll need to first download and extract the text dataset
     from here: http://www.fit.vutbr.cz/~imikolov/rnnlm/simple-examples.tgz. Change the
     data_path variable below to your local exraction path"""
@@ -102,7 +105,7 @@ model.add(LSTM(hidden_size, return_sequences=True, input_shape=(train_X.shape[1]
 if use_dropout:
     model.add(Dropout(0.5))
 #model.add(Dense(hidden_size2))
-#model.add(Activation('relu'))
+model.add(Activation('relu'))
 model.add(LSTM(hidden_size, return_sequences=False))
 if use_dropout:
     model.add(Dropout(0.5))
@@ -110,9 +113,9 @@ if use_dropout:
 #model.add(Dense(1))
 #model.add(Dense(1, kernel_regularizer=regularizers.l2(0.1), activity_regularizer=regularizers.l1(0.1)))
 model.add(Dense(1, kernel_regularizer=regularizers.l2(l2_num)))
-model.add(Activation('linear'))
+model.add(Activation('relu'))
 
-optimizer = Adam()
+optimizer = Adam(clipvalue=0.5)
 model.compile(loss=losses.mean_squared_error, optimizer='adam', metrics=['MAE','MSE','MAPE','MSLE'])
 print("end model")
 
@@ -131,7 +134,7 @@ if args.run_opt == 1:
     print("epoch:", epoch_num, "batch_size:", batch_size, "l2", l2_num, "from_num", from_num, "use_dropout:", use_dropout)
     history = model.fit(train_X, train_y, epochs=epoch_num, batch_size=batch_size, validation_data=(test_X, test_y), verbose=verbose, shuffle=True, callbacks=[checkpointer])
 
-    save_data_from_db(history, dirPath = data_path, description = 'history_bpi2012_batch_' + str(batch_size) + '_l2_' + str(l2_num) + '_from_num_' + str(from_num) + '_use_dropout_' + str(use_dropout), version = "3")
+    save_data_from_db(history.history, dirPath = data_path, description = 'history_bpi2012_batch_' + str(batch_size) + '_l2_' + str(l2_num) + '_from_num_' + str(from_num) + '_use_dropout_' + str(use_dropout), version = "3")
 
     #modelNameStr = "bpi2012_" + str(epoch_num) + "_" + str(batch_size) + "_" + "predict_left_timev3" + ".h5"
     #model.save('modelNameStr')
@@ -148,10 +151,13 @@ elif args.run_opt == 2:
     predict_y = model.predict(test_X[0:200])
     for i in range(predict_y.shape[0]):
         print("actual:", test_y[i], " predict:", predict_y[i])
-
-
-
-
-
+elif args.run_opt == 3:
+    print("knn")
+    neigh = KNeighborsRegressor(n_neighbors=2)
+    train_X = train_X.reshape((train_X.shape[0],train_X.shape[1]*train_X.shape[2]))
+    neigh.fit(train_X, train_y)
+    for i in range(test_X.shape[0]):
+        predict_y = neigh.predict(test_X[i])
+        print("actual:", test_y[i], " predict:", predict_y)
 
 
