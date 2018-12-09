@@ -60,38 +60,50 @@ from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
 rbm = BernoulliRBM(random_state=0, verbose=True)
 svc = LinearSVC()
-rbm_features_classifier = Pipeline(
-    steps=[('rbm', rbm), ('svc', svc)])
-rbm.learning_rate = 0.06
-rbm.n_iter = 20
-rbm.n_components = 50
+# rbm_features_classifier = Pipeline(
+#     steps=[('rbm', rbm), ('svc', svc)])
+rbm.learning_rate = 0.1
+rbm.n_iter = 5
+rbm.n_components = 10
 
 
 if args.run_opt == 1:
-    print('training...')
-    clf = rbm_features_classifier.fit(train_X, train_y)
-    print('training Complete')
+    import gc
+    gc.collect()
+
+    print('Training RBM ...')
+    for i, chunk in enumerate(np.array_split(train_X, 50)):
+        print('rbm.partial_fit chunk %d/50\r'%(i+1), end="")
+        rbm.partial_fit(chunk)
+
+    print('Training RBM Complete')
+    gc.collect()
+
+    print('Training Classifier ...')
+    clf = svc.fit(rbm.transform(train_X), train_y)
+    # clf = rbm_features_classifier.fit(train_X, train_y)
+    print('Training Classifier Complete')
     print(clf)
 
     from sklearn import metrics
-    y_pred = clf.predict(test_X)
+    y_pred = clf.predict(rbm.transform(test_X))
     print(metrics.classification_report(test_y, y_pred))
     print('accuracy_score:', metrics.accuracy_score(test_y, y_pred))
 
-elif args.run_opt == 2:
-    print("load model")
-    # model = load_model("my_model_2012_minusstarttime.h5")
+# elif args.run_opt == 2:
+#     print("load model")
+#     # model = load_model("my_model_2012_minusstarttime.h5")
 
-    # predictTrueNum = 0
-    # predictFalseNum = 0
-    # actualTrueNum = 0
-    # actualFalseNum = 0
-    # overTime = 30
-    # predict_y = model.predict(test_X[0:200])
-    # for i in range(predict_y.shape[0]):
-        # print("actual:", test_y[i], " predict:", predict_y[i])
+#     # predictTrueNum = 0
+#     # predictFalseNum = 0
+#     # actualTrueNum = 0
+#     # actualFalseNum = 0
+#     # overTime = 30
+#     # predict_y = model.predict(test_X[0:200])
+#     # for i in range(predict_y.shape[0]):
+#         # print("actual:", test_y[i], " predict:", predict_y[i])
 
-    print('done')
+#     print('done')
 
 
 
