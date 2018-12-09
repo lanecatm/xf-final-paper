@@ -265,7 +265,7 @@ def load_data_from_db(num_steps, defaultAtributeList, activityAttributeList, cas
 
         caseName = row[attrName2IdDict[caseColumnName]]
 
-        featureArray, featureTimeStamp  = change_row_into_array(row, attrName2IdDict, useTimeAttributeList, useBooleanAttributeList, useFloatAttributeList, useClassAttributeList, timeStrp, classAttributeToIdDict, minValueDict, maxValueDict, caseStartTimeDict[caseName],86400)
+        featureArray, featureTimeStamp  = change_row_into_array(row, attrName2IdDict, useTimeAttributeList, useBooleanAttributeList, useFloatAttributeList, useClassAttributeList, timeStrp, classAttributeToIdDict, minValueDict, maxValueDict, caseStartTimeDict[caseName],8640000)
         if not caseName in caseActivityDict:
             caseActivityDict[caseName] = []
             caseTimeDict[caseName] = []
@@ -292,7 +292,7 @@ def load_data_from_db(num_steps, defaultAtributeList, activityAttributeList, cas
                 else:
                     timeOrderLabelArray[timeOrderEventsArrayIndex] = 0
                     falseNum += 1
-                #timeOrderLabelArray[timeOrderEventsArrayIndex] = (caseEndTimeStamp - nowFeatureTimeStamp) / 86400.0
+                #timeOrderLabelArray[timeOrderEventsArrayIndex] = (caseEndTimeStamp - nowFeatureTimeStamp) / 8640000.0
                 #timeOrderLabelArray[timeOrderEventsArrayIndex] = (featureTimeStamp - min_timestamp) / float(60*60)
                 #print(timeOrderLabelArray[timeOrderEventsArrayIndex])
                 #input()
