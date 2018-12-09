@@ -12,7 +12,7 @@ from import_txt import *
 
 
 
-startCalculateEventNum = 5
+startCalculateEventNum = 1
 
 
 def build_min_and_max_timestamp(attributeName, dbName, tableName, timeStrp):
@@ -253,6 +253,9 @@ def load_data_from_db(num_steps, defaultAtributeList, activityAttributeList, cas
     timeOrderEventsArrayIndex = 0
     overNumStepEventNumber = 0
     lessNumEventNumber = 0
+    
+    trueNum = 0
+    falseNum = 0
     for row in cursor:
         if (rowIndex % 10000 == 0):
             print("input ", rowIndex)
@@ -281,7 +284,15 @@ def load_data_from_db(num_steps, defaultAtributeList, activityAttributeList, cas
                 caseEndTimeStamp = caseEndTimeDict[caseName]
                 #if caseEndTimeStamp < featureTimeStamp:
                 #    print("case end time error")
-                timeOrderLabelArray[timeOrderEventsArrayIndex] = (caseEndTimeStamp - nowFeatureTimeStamp) / 86400.0
+                # yik label
+                caseDuration = caseEndTimeStamp - caseStartTimeDict[caseName]
+                if caseDuration > 60 * 60 * 24 * 30:
+                    timeOrderLabelArray[timeOrderEventsArrayIndex] = 1 
+                    trueNum += 1
+                else:
+                    timeOrderLabelArray[timeOrderEventsArrayIndex] = 0
+                    falseNum += 1
+                #timeOrderLabelArray[timeOrderEventsArrayIndex] = (caseEndTimeStamp - nowFeatureTimeStamp) / 86400.0
                 #timeOrderLabelArray[timeOrderEventsArrayIndex] = (featureTimeStamp - min_timestamp) / float(60*60)
                 #print(timeOrderLabelArray[timeOrderEventsArrayIndex])
                 #input()
@@ -294,8 +305,8 @@ def load_data_from_db(num_steps, defaultAtributeList, activityAttributeList, cas
     print(useClassAttributeList + useTimeAttributeList + useBooleanAttributeList + useFloatAttributeList)
     #for eventList in caseActivityDict["5ceab127a2ec35a9"]:
     #    print(eventList)
-    for feature in caseActivityDict[caseName]:
-        print(feature)
+    # for feature in caseActivityDict[caseName]:
+    #     print(feature)
     print(len(caseActivityDict[caseName]))
 
     print("overNumStepEventNumber:", overNumStepEventNumber)
@@ -307,6 +318,11 @@ def load_data_from_db(num_steps, defaultAtributeList, activityAttributeList, cas
     print("timeOrderLabelArray", timeOrderLabelArray[-1])
     print("timeOrderLabelArray", timeOrderLabelArray[-2])
     print("timeOrderLabelArray", timeOrderLabelArray[0])
+    print("falseNum", falseNum)
+    print("trueNum", trueNum)
+
+
+
 
     return caseActivityDict, vocabulary, timeOrderEventsArray, timeOrderLabelArray
 
