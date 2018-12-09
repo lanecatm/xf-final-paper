@@ -307,7 +307,7 @@ def load_data_from_db(num_steps, defaultAtributeList, activityAttributeList, cas
     #    print(eventList)
     # for feature in caseActivityDict[caseName]:
     #     print(feature)
-    print(len(caseActivityDict[caseName]))
+    print('len(caseActivityDict[caseName]):', len(caseActivityDict[caseName]))
 
     print("overNumStepEventNumber:", overNumStepEventNumber)
     print("lessNumEventNumber:", lessNumEventNumber)
@@ -315,9 +315,9 @@ def load_data_from_db(num_steps, defaultAtributeList, activityAttributeList, cas
     # TODO delete final zeros in timeOrderEventsArray and timeOrderLabelArray
     timeOrderEventsArray = timeOrderEventsArray[:timeOrderEventsArrayIndex,:,:]
     timeOrderLabelArray = timeOrderLabelArray[:timeOrderEventsArrayIndex]
-    print("timeOrderLabelArray", timeOrderLabelArray[-1])
-    print("timeOrderLabelArray", timeOrderLabelArray[-2])
-    print("timeOrderLabelArray", timeOrderLabelArray[0])
+    # print("timeOrderLabelArray", timeOrderLabelArray[-1])
+    # print("timeOrderLabelArray", timeOrderLabelArray[-2])
+    # print("timeOrderLabelArray", timeOrderLabelArray[0])
     print("falseNum", falseNum)
     print("trueNum", trueNum)
 
