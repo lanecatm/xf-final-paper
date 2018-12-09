@@ -99,35 +99,37 @@ test_nowtime = timeOrderNowTimeArray[test_num:]
 
 print("begin model")
 
-hidden_size = vocabulary
-model = Sequential()
-#model.add(Embedding(vocabulary, hidden_size, input_length=num_steps, mask_zero = True))
-model.add(Masking(mask_value=0,input_shape=(num_steps, vocabulary)))
-model.add(LSTM(hidden_size, return_sequences=True, input_shape=(train_X.shape[1], train_X.shape[2])))
-if use_dropout:
-    model.add(Dropout(0.5))
-#model.add(Dense(hidden_size2))
-model.add(Activation('relu'))
-model.add(LSTM(hidden_size, return_sequences=False))
-if use_dropout:
-    model.add(Dropout(0.5))
-#model.add(TimeDistributed(Dense(vocabulary)))
-#model.add(Dense(1))
-#model.add(Dense(1, kernel_regularizer=regularizers.l2(0.1), activity_regularizer=regularizers.l1(0.1)))
-model.add(Dense(1, kernel_regularizer=regularizers.l2(l2_num)))
-model.add(Activation('relu'))
-
-optimizer = Adam(clipvalue=0.5)
-#optimizer = Adam()
-model.compile(loss=losses.mean_squared_error, optimizer='adam', metrics=['MAE','MSE','MAPE','MSLE'])
-print("end model")
-
-print(model.summary())
-checkpointer = ModelCheckpoint(filepath=data_path + '/bpi2012_epoch_{epoch:02d}_batch_' + str(batch_size) + '_l2_' + str(l2_num) + '_from_num_' + str(from_num) + '_use_dropout_' + str(use_dropout) + '_predict_left_time_v3' + '.hdf5', verbose=verbose)
-
-
 # v3 增加正则化表达
 if args.run_opt == 1:
+
+    hidden_size = vocabulary
+    model = Sequential()
+    #model.add(Embedding(vocabulary, hidden_size, input_length=num_steps, mask_zero = True))
+    model.add(Masking(mask_value=0,input_shape=(num_steps, vocabulary)))
+    model.add(LSTM(hidden_size, return_sequences=True, input_shape=(train_X.shape[1], train_X.shape[2])))
+    if use_dropout:
+        model.add(Dropout(0.5))
+    #model.add(Dense(hidden_size2))
+    model.add(Activation('relu'))
+    model.add(LSTM(hidden_size, return_sequences=False))
+    if use_dropout:
+        model.add(Dropout(0.5))
+    #model.add(TimeDistributed(Dense(vocabulary)))
+    #model.add(Dense(1))
+    #model.add(Dense(1, kernel_regularizer=regularizers.l2(0.1), activity_regularizer=regularizers.l1(0.1)))
+    model.add(Dense(1, kernel_regularizer=regularizers.l2(l2_num)))
+    model.add(Activation('relu'))
+
+    optimizer = Adam(clipvalue=0.5)
+    #optimizer = Adam()
+    model.compile(loss=losses.mean_squared_error, optimizer='adam', metrics=['MAE','MSE','MAPE','MSLE'])
+    print("end model")
+
+    print(model.summary())
+    checkpointer = ModelCheckpoint(filepath=data_path + '/bpi2012_epoch_{epoch:02d}_batch_' + str(batch_size) + '_l2_' + str(l2_num) + '_from_num_' + str(from_num) + '_use_dropout_' + str(use_dropout) + '_predict_left_time_v3' + '.hdf5', verbose=verbose)
+
+
+
     #model.fit_generator(train_data_generator.generate(), len(train_data)//(batch_size*num_steps), num_epochs,
     #                    validation_data=valid_data_generator.generate(),
     #                    validation_steps=len(valid_data)//(batch_size*num_steps), callbacks=[checkpointer])
