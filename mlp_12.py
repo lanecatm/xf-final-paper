@@ -38,7 +38,10 @@ num_steps = 100
 
 use_dropout=True
 epoch_num = 10
-version = 4
+version = 0
+# version 0: 256, 64 no dropout
+# version 4: 256, 64 with dropout
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('run_opt', type=int, default=1, help='An integer: 1 to train, 2 to test')
@@ -68,33 +71,30 @@ caseActivityDict, vocabulary, timeOrderEventsArray, timeOrderLabelArray = load_d
         dbName = "bpi2012.db", tableName = "bpi2012_new", timeStrp = "%Y-%m-%d %H:%M:%S")
 
 train_num = int(timeOrderEventsArray.shape[0] * 0.9)
-train_X = timeOrderEventsArray[:train_num,:,:]
-test_X = timeOrderEventsArray[train_num:,:,:]
+
+reshapeX = np.reshape(timeOrderEventsArray, 
+    ((timeOrderEventsArray.shape[0], timeOrderEventsArray.shape[1] * timeOrderEventsArray.shape[2])))
+
+train_num = int(reshapeX.shape[0] * 0.9)
+train_X = reshapeX[:train_num,:]
+test_X = reshapeX[train_num:,:]
 train_y = timeOrderLabelArray[:train_num]
 test_y = timeOrderLabelArray[train_num:]
+
+# train_X = timeOrderEventsArray[:train_num,:,:]
+# test_X = timeOrderEventsArray[train_num:,:,:]
+# train_y = timeOrderLabelArray[:train_num]
+# test_y = timeOrderLabelArray[train_num:]
 
 print("begin model")
 
 hidden_size = vocabulary
 model = Sequential()
-#model.add(Embedding(vocabulary, hidden_size, input_length=num_steps, mask_zero = True))
-model.add(Masking(mask_value=0,input_shape=(num_steps, vocabulary)))
-# model.add(LSTM(hidden_size, return_sequences=True, input_shape=(train_X.shape[1], train_X.shape[2])))
-# if use_dropout:
-#     model.add(Dropout(0.5))
-#model.add(Dense(hidden_size2))
-#model.add(Activation('relu'))
-model.add(LSTM(hidden_size, return_sequences=False))
-if use_dropout:
-    model.add(Dropout(0.5))
-model.add(Activation('relu'))
-# model.add(layers.Dense(16,activation='relu'))
-# if use_dropout:
-#     model.add(Dropout(0.5))
-#model.add(TimeDistributed(Dense(vocabulary)))
-# model.add(Dense(1))
-# model.add(Activation('sigmoid'))
-# model.add(Dense(1))
+model.add(Masking(mask_value=0,input_shape=(num_steps * vocabulary,)))
+model.add(Dense(256, activation='relu'))
+# model.add(Dropout(0.5))
+model.add(Dense(64, activation='relu'))
+# model.add(Dropout(0.5))
 model.add(Dense(1, activation='sigmoid'))
 
 optimizer = Adam()
@@ -104,43 +104,29 @@ model.compile(loss=losses.binary_crossentropy,
     metrics=['binary_crossentropy','accuracy'])
 
 print("end model")
-
 print(model.summary())
-checkpointer = ModelCheckpoint(filepath=data_path + '/bpi2012_{epoch:02d}_' + str(batch_size) + '_predict_overtime_v' + str(version) + '.hdf5', verbose=1)
+checkpointer = ModelCheckpoint(filepath=data_path + '/bpi2012_mlp_{epoch:02d}_' + str(batch_size) + '_predict_overtime_v' + str(version) + '.hdf5', verbose=1)
 
 
 if args.run_opt == 1:
-    #model.fit_generator(train_data_generator.generate(), len(train_data)//(batch_size*num_steps), num_epochs,
-    #                    validation_data=valid_data_generator.generate(),
-    #                    validation_steps=len(valid_data)//(batch_size*num_steps), callbacks=[checkpointer])
-    # model.fit_generator(train_data_generator.generate(), 2000, num_epochs,
-    #                     validation_data=valid_data_generator.generate(),
-    #                     validation_steps=10)
     history = model.fit(train_X, train_y, epochs=epoch_num, batch_size=batch_size, validation_data=(test_X, test_y), verbose=1, shuffle=True, callbacks=[checkpointer])
-
     modelNameStr = "bpi2012_" + str(epoch_num) + "_" + str(batch_size) + "_predict_overtime_v" + str(version) + ".h5"
     model.save(modelNameStr)
     #model.save(data_path + "final_model.hdf5")
 
     print('final model predictions')
-    # score, acc = model.evaluate(test_X, test_y, batch_size=batch_size)
-    # print('Test score:', score, 'Test accuracy', acc)
     predict_y = prob_to_class(model.predict(test_X))
     print(classification_report(test_y, predict_y))
 
-    for i in range(epoch_num):
-        print('load model from: bpi2012_0' + str(i+1) + '_' + str(batch_size) + '_predict_overtime_v' + str(version) + '.hdf5')
-        model = load_model(
-            'bpi2012_0' + str(i+1) + '_' + str(batch_size) + '_predict_overtime_v' + str(version) + '.hdf5'
-            # ,custom_objects={
-            #     'precision':keras_metrics.precision(), 
-            #     'recall': keras_metrics.recall()
-            # }
-        )
-        # score, acc = model.evaluate(test_X, test_y, batch_size=batch_size)
-        # print('Test score:', score, 'Test accuracy', acc)
-        predict_y = prob_to_class(model.predict(test_X))
-        print(classification_report(test_y, predict_y))
+    # for i in range(epoch_num):
+    #     print('load model from: bpi2012_0' + str(i+1) + '_' + str(batch_size) + '_predict_overtime_v' + str(version) + '.hdf5')
+    #     model = load_model(
+    #         'bpi2012_0' + str(i+1) + '_' + str(batch_size) + '_predict_overtime_v' + str(version) + '.hdf5'
+    #     )
+    #     score, acc = model.evaluate(test_X, test_y, batch_size=batch_size)
+    #     print('Test score:', score, 'Test accuracy', acc)
+    #     predict_y = prob_to_class(model.predict(test_X))
+    #     print(classification_report(test_y, predict_y))
 
 elif args.run_opt == 2:
     for i in range(epoch_num):

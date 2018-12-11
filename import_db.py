@@ -13,6 +13,9 @@ from import_txt import *
 
 
 startCalculateEventNum = 1
+# 30 days for bpi 2012 data
+AnomalyThreshold = 60 * 60 * 24 * 30   
+
 
 
 def build_min_and_max_timestamp(attributeName, dbName, tableName, timeStrp):
@@ -286,7 +289,7 @@ def load_data_from_db(num_steps, defaultAtributeList, activityAttributeList, cas
                 #    print("case end time error")
                 # yik label
                 caseDuration = caseEndTimeStamp - caseStartTimeDict[caseName]
-                if caseDuration > 60 * 60 * 24 * 30:
+                if caseDuration > AnomalyThreshold:
                     timeOrderLabelArray[timeOrderEventsArrayIndex] = 1 
                     trueNum += 1
                 else:

@@ -129,7 +129,6 @@ elif args.run_opt == 2:
     test_y = timeOrderLabelArray[train_num:]
     gc.collect()
 
-
     rbm = BernoulliRBM(random_state=0, verbose=True)
     rbm.learning_rate = 0.1
     rbm.n_iter = 5
@@ -216,6 +215,7 @@ elif args.run_opt == 4:
             print('accuracy:', accuracy)
             print('----------------------------\n')
             gc.collect()
+
 
 
 

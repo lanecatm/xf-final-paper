@@ -35,10 +35,6 @@ args = parser.parse_args()
 if args.data_path:
     data_path = args.data_path
 
-
-
-
-
 caseAttributeNameList = ['(case) AMOUNT_REQ']
 activityAttributeList = ['concept:name','lifecycle:transition', 'Activity', 'Resource', 'Complete Timestamp']
 defaultAtributeList = ['ID', 'Case ID']
@@ -46,7 +42,8 @@ defaultAtributeList = ['ID', 'Case ID']
 useTimeAttributeList = ['Complete Timestamp']
 useBooleanAttributeList = []
 useFloatAttributeList = ['(case) AMOUNT_REQ']
-useClassAttributeList = ['Activity', 'Resource']
+useClassAttributeList = ['Activity']
+# useClassAttributeList = ['Activity', 'Resource']
 
 
 caseActivityDict, vocabulary, timeOrderEventsArray, timeOrderLabelArray = load_data_from_db(num_steps = num_steps, 
@@ -72,12 +69,9 @@ train_y = timeOrderLabelArray[:train_num]
 test_y = timeOrderLabelArray[train_num:]
 
 
-from sklearn.svm import LinearSVC
-clf = LinearSVC()
-
-
-
 if args.run_opt == 1:
+    from sklearn.svm import LinearSVC
+    clf = LinearSVC()
     print('training...')
     clf = clf.fit(train_X, train_y)
     print('training Complete')
@@ -89,7 +83,33 @@ if args.run_opt == 1:
     print('accuracy_score:', metrics.accuracy_score(test_y, y_pred))
 
 elif args.run_opt == 2:
-    print("load model")
+    # print("load model")
+    from sklearn.decomposition import PCA
+    from sklearn.neural_network import BernoulliRBM
+    from sklearn.pipeline import Pipeline
+    from sklearn.svm import LinearSVC
+    from sklearn.linear_model import SGDClassifier
+    
+
+    from imblearn.combine import SMOTETomek
+    from imblearn.under_sampling import NearMiss
+    # smote_tomek = SMOTETomek(random_state=0)
+    nm = NearMiss()
+    pca = PCA(n_components=20, normalize_components=True, random_state=0)
+    svc = LinearSVC()
+    # pipe = Pipeline(steps=[('pca', pca), ('svc', svc)])
+    # print('resampling...')
+    # X_resampled, y_resampled = nm.fit_resample(train_X, train_y)
+    print('Training')
+    pca.fit(train_X)
+
+    # pipe.fit(X_resampled, y_resampled)
+    # print('Testing')
+    # y_pred = pipe.predict(test_X)
+
+    from sklearn import metrics
+    print(metrics.classification_report(test_y, y_pred))
+    print('accuracy_score:', metrics.accuracy_score(test_y, y_pred))
     # model = load_model("my_model_2012_minusstarttime.h5")
 
     # predictTrueNum = 0
