@@ -37,8 +37,8 @@ batch_size = 128
 num_steps = 100
 
 use_dropout=True
-epoch_num = 10
-version = 4
+epoch_num = 1
+version = 7
 
 parser = argparse.ArgumentParser()
 parser.add_argument('run_opt', type=int, default=1, help='An integer: 1 to train, 2 to test')
@@ -157,7 +157,35 @@ elif args.run_opt == 2:
 
 
 
+if args.run_opt == 3:
+    # weighted 
+    class_weight = {0: 1.,
+                1: 3.}
+    history = model.fit(train_X, train_y, epochs=epoch_num, batch_size=batch_size, validation_data=(test_X, test_y), verbose=1, shuffle=True, callbacks=[checkpointer], class_weight=class_weight)
 
+    modelNameStr = "bpi2012_" + str(epoch_num) + "_" + str(batch_size) + "_predict_overtime_v" + str(version) + ".h5"
+    model.save(modelNameStr)
+    #model.save(data_path + "final_model.hdf5")
+
+    print('final model predictions')
+    # score, acc = model.evaluate(test_X, test_y, batch_size=batch_size)
+    # print('Test score:', score, 'Test accuracy', acc)
+    predict_y = prob_to_class(model.predict(test_X))
+    print(classification_report(test_y, predict_y))
+
+    for i in range(epoch_num):
+        print('load model from: bpi2012_0' + str(i+1) + '_' + str(batch_size) + '_predict_overtime_v' + str(version) + '.hdf5')
+        model = load_model(
+            'bpi2012_0' + str(i+1) + '_' + str(batch_size) + '_predict_overtime_v' + str(version) + '.hdf5'
+            # ,custom_objects={
+            #     'precision':keras_metrics.precision(), 
+            #     'recall': keras_metrics.recall()
+            # }
+        )
+        # score, acc = model.evaluate(test_X, test_y, batch_size=batch_size)
+        # print('Test score:', score, 'Test accuracy', acc)
+        predict_y = prob_to_class(model.predict(test_X))
+        print(classification_report(test_y, predict_y))
 
 
 
