@@ -37,9 +37,9 @@ data_path = "./model/"
 verbose = 1
 batch_size = 128
 num_steps = 100
-l2_num = 0.1
+l2_num = 0.01
 
-use_dropout=False
+use_dropout=True
 epoch_num = 10
 from_num = 5
 
@@ -75,10 +75,10 @@ useFloatAttributeList = ['(case) AMOUNT_REQ']
 useClassAttributeList = ['Activity', 'Resource']
 
 
-caseActivityDict, vocabulary, timeOrderEventsArray, timeOrderLabelArray, timeOrderNowTimeArray = load_data_from_db(from_num = from_num, num_steps = num_steps, 
+caseActivityDict, vocabulary, timeOrderEventsArray, timeOrderLabelArray, timeOrderNowTimeArray, timeOrderNowActivityList = load_data_from_db(from_num = from_num, num_steps = num_steps, 
         defaultAtributeList= defaultAtributeList, activityAttributeList = activityAttributeList , caseAttributeNameList = caseAttributeNameList, 
         useTimeAttributeList = useTimeAttributeList, useBooleanAttributeList = useBooleanAttributeList, useFloatAttributeList = useFloatAttributeList, useClassAttributeList = useClassAttributeList, 
-        caseColumnName = "Case ID", timeColumnName = "Complete Timestamp", idColumnName = "ID", 
+        caseColumnName = "Case ID", timeColumnName = "Complete Timestamp", idColumnName = "ID", activityColumnName = "Activity",
         dbName = "bpi2012.db", tableName = "bpi2012_new", timeStrp = "%Y-%m-%d %H:%M:%S")
 
 
@@ -106,19 +106,21 @@ if args.run_opt == 1:
     model = Sequential()
     #model.add(Embedding(vocabulary, hidden_size, input_length=num_steps, mask_zero = True))
     model.add(Masking(mask_value=0,input_shape=(num_steps, vocabulary)))
-    model.add(LSTM(hidden_size, return_sequences=True, input_shape=(train_X.shape[1], train_X.shape[2])))
+
+    model.add(LSTM(hidden_size, return_sequences=True, input_shape=(train_X.shape[1], train_X.shape[2]), kernel_regularizer=regularizers.l2(l2_num) ))
     if use_dropout:
-        model.add(Dropout(0.5))
+        model.add(Dropout(0.2))
     #model.add(Dense(hidden_size2))
     model.add(Activation('relu'))
-    model.add(LSTM(hidden_size, return_sequences=False))
+    model.add(LSTM(hidden_size, return_sequences=False, kernel_regularizer=regularizers.l2(l2_num)))
     if use_dropout:
-        model.add(Dropout(0.5))
+        model.add(Dropout(0.2))
     #model.add(TimeDistributed(Dense(vocabulary)))
     #model.add(Dense(1))
     #model.add(Dense(1, kernel_regularizer=regularizers.l2(0.1), activity_regularizer=regularizers.l1(0.1)))
-    model.add(Dense(1, kernel_regularizer=regularizers.l2(l2_num)))
+    #model.add(LSTM(hidden_size))
     model.add(Activation('relu'))
+    model.add(Dense(1, kernel_regularizer=regularizers.l2(l2_num)))
 
     optimizer = Adam(clipvalue=0.5)
     #optimizer = Adam()
@@ -229,3 +231,4 @@ elif args.run_opt == 4:
     est = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=1, random_state=0, loss='ls').fit(train_X, train_y)
     print("mse:", mean_squared_error(test_y, est.predict(test_X)))
     print("mae:", mean_absolute_error(test_y, est.predict(test_X)))
+

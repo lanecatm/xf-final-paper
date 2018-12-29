@@ -9,6 +9,7 @@ import time
 import json
 import copy
 from import_txt import *
+from normal import *
 
 
 
@@ -152,6 +153,7 @@ def change_row_into_array(row, attrName2IdDict, useTimeAttributeList, useBoolean
 
     # change time
     timeAttributeList = []
+    endTimeStamp = 0
     for attr in useTimeAttributeList:
         endTimeStamp = timeStrToTimeStamp( row[attrName2IdDict[attr]], timeStrp)
         endTimeStampNormal = (endTimeStamp - caseStartTime) / float(timeUnit)
@@ -216,7 +218,7 @@ def load_basic_data_from_db(dbName, tableName, useClassAttributeList, useFloatAt
     return classAttributeToIdDict,minValueDict,maxValueDict
 
 
-def load_data_from_db(from_num, num_steps, defaultAtributeList, activityAttributeList, caseAttributeNameList, useTimeAttributeList, useBooleanAttributeList, useFloatAttributeList, useClassAttributeList, caseColumnName, timeColumnName, idColumnName, dbName, tableName, timeStrp):
+def load_data_from_db(from_num, num_steps, defaultAtributeList, activityAttributeList, caseAttributeNameList, useTimeAttributeList, useBooleanAttributeList, useFloatAttributeList, useClassAttributeList, caseColumnName, timeColumnName, idColumnName, activityColumnName, dbName, tableName, timeStrp):
 
     #classAttributeToIdDict = load_same_data_from_db()
     classAttributeToIdDict, minValueDict, maxValueDict  = load_basic_data_from_db(dbName, tableName, useClassAttributeList, useFloatAttributeList)
@@ -246,9 +248,12 @@ def load_data_from_db(from_num, num_steps, defaultAtributeList, activityAttribut
         vocabulary += len(classAttributeToIdDict[attr])
     print("vocabulary", vocabulary)
 
+    activityVocabulary = len(classAttributeToIdDict[activityColumnName])
+
     timeOrderEventsArray = np.zeros((eventNumber, num_steps, vocabulary))
     timeOrderLabelArray = np.zeros((eventNumber))
     timeOrderNowTimeArray = np.zeros((eventNumber))
+    timeOrderNowActivityList = []
 
     rowIndex = 1
     timeOrderEventsArrayIndex = 0
@@ -263,34 +268,31 @@ def load_data_from_db(from_num, num_steps, defaultAtributeList, activityAttribut
 
         caseName = row[attrName2IdDict[caseColumnName]]
 
-        featureArray, featureTimeStamp  = change_row_into_array(row, attrName2IdDict, useTimeAttributeList, useBooleanAttributeList, useFloatAttributeList, useClassAttributeList, timeStrp, classAttributeToIdDict, minValueDict, maxValueDict, caseStartTimeDict[caseName],86400)
+        featureArray, featureTimeStamp  = change_row_into_array(row, attrName2IdDict, useTimeAttributeList, useBooleanAttributeList, useFloatAttributeList, useClassAttributeList, timeStrp, classAttributeToIdDict, minValueDict, maxValueDict, caseStartTimeDict[caseName],MAXDAY)
+        activityArray, _  = change_row_into_array(row, attrName2IdDict, [], [], [], [activityColumnName], timeStrp, classAttributeToIdDict, minValueDict, maxValueDict, caseStartTimeDict[caseName],MAXDAY)
         if not caseName in caseActivityDict:
             caseActivityDict[caseName] = []
             caseTimeDict[caseName] = []
-        else:
-            # add event and label to list
-            if len(caseActivityDict[caseName]) > num_steps:
-                overNumStepEventNumber += 1
-            elif len(caseActivityDict[caseName]) < from_num:
-                lessNumEventNumber += 1
-            else:
-                # TODO check
-                nowFeatureArray = np.array(caseActivityDict[caseName])
-                nowFeatureTimeStamp = caseTimeDict[caseName][-1]
-
-                timeOrderEventsArray[timeOrderEventsArrayIndex, : nowFeatureArray.shape[0], : ] = nowFeatureArray[:,:]
-                caseEndTimeStamp = caseEndTimeDict[caseName]
-                #if caseEndTimeStamp < featureTimeStamp:
-                #    print("case end time error")
-                timeOrderLabelArray[timeOrderEventsArrayIndex] = (caseEndTimeStamp - nowFeatureTimeStamp) / 86400.0
-                timeOrderNowTimeArray[timeOrderEventsArrayIndex] = (nowFeatureTimeStamp - caseStartTimeDict[caseName]) / 86400.0
-                #timeOrderLabelArray[timeOrderEventsArrayIndex] = (featureTimeStamp - min_timestamp) / float(60*60)
-                #print(timeOrderLabelArray[timeOrderEventsArrayIndex])
-                #input()
-                timeOrderEventsArrayIndex += 1
 
         caseActivityDict[caseName].append(featureArray)
         caseTimeDict[caseName].append(featureTimeStamp)
+        # add event and label to list
+        if len(caseActivityDict[caseName]) > num_steps:
+            overNumStepEventNumber += 1
+        elif len(caseActivityDict[caseName]) < from_num:
+            lessNumEventNumber += 1
+        else:
+            # TODO check
+            nowFeatureArray = np.array(caseActivityDict[caseName])
+            nowFeatureTimeStamp = caseTimeDict[caseName][-1]
+
+            timeOrderEventsArray[timeOrderEventsArrayIndex, : nowFeatureArray.shape[0], : ] = nowFeatureArray[:,:]
+            caseEndTimeStamp = caseEndTimeDict[caseName]
+            timeOrderLabelArray[timeOrderEventsArrayIndex] = (caseEndTimeStamp - nowFeatureTimeStamp) / float(MAXDAY)
+            timeOrderNowTimeArray[timeOrderEventsArrayIndex] = (nowFeatureTimeStamp - caseStartTimeDict[caseName]) / float(MAXDAY)
+            timeOrderNowActivityList.append((caseName,activityArray))
+            timeOrderEventsArrayIndex += 1
+
     conn.close()
 
     print(useClassAttributeList + useTimeAttributeList + useBooleanAttributeList + useFloatAttributeList)
@@ -307,10 +309,11 @@ def load_data_from_db(from_num, num_steps, defaultAtributeList, activityAttribut
     timeOrderEventsArray = timeOrderEventsArray[:timeOrderEventsArrayIndex,:,:]
     timeOrderLabelArray = timeOrderLabelArray[:timeOrderEventsArrayIndex]
     timeOrderNowTimeArray = timeOrderNowTimeArray[:timeOrderEventsArrayIndex]
+
     print("timeOrderLabelArray", timeOrderLabelArray[-1])
     print("timeOrderLabelArray", timeOrderLabelArray[-2])
     print("timeOrderLabelArray", timeOrderLabelArray[0])
 
-    return caseActivityDict, vocabulary, timeOrderEventsArray, timeOrderLabelArray, timeOrderNowTimeArray
+    return caseActivityDict, vocabulary, timeOrderEventsArray, timeOrderLabelArray, timeOrderNowTimeArray,timeOrderNowActivityList
 
 

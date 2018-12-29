@@ -14,6 +14,7 @@ def calculate_markov_array(dbName, tableName, activityColumnName, timeColumnName
     caseActivityDict = {}
     for row in cursor:
         caseName = row[attrName2IdDict[caseColumnName]]
+        activity
 
 
     conn.close()
