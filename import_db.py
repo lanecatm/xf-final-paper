@@ -12,9 +12,10 @@ from import_txt import *
 
 
 
-startCalculateEventNum = 1
+startCalculateEventNum = 5 
+print(' startCalculateEventNum = ', startCalculateEventNum)
 # 30 days for bpi 2012 data
-AnomalyThreshold = 60 * 60 * 24 * 30   
+AnomalyThreshold = 33 * 60 * 60 * 24   
 
 
 
