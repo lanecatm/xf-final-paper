@@ -278,6 +278,16 @@ def load_data_from_db(from_num, num_steps, defaultAtributeList, activityAttribut
         caseTimeDict[caseName].append(featureTimeStamp)
         # add event and label to list
         if len(caseActivityDict[caseName]) > num_steps:
+            nowFeatureArray = np.array(caseActivityDict[caseName])
+            nowFeatureTimeStamp = caseTimeDict[caseName][-1]
+
+            timeOrderEventsArray[timeOrderEventsArrayIndex, : , : ] = nowFeatureArray[nowFeatureArray.shape[0] - num_steps:,:]
+            caseEndTimeStamp = caseEndTimeDict[caseName]
+            timeOrderLabelArray[timeOrderEventsArrayIndex] = (caseEndTimeStamp - nowFeatureTimeStamp) / float(MAXDAY)
+            timeOrderNowTimeArray[timeOrderEventsArrayIndex] = (nowFeatureTimeStamp - caseStartTimeDict[caseName]) / float(MAXDAY)
+            timeOrderNowActivityList.append((caseName,activityArray))
+            timeOrderEventsArrayIndex += 1
+
             overNumStepEventNumber += 1
         elif len(caseActivityDict[caseName]) < from_num:
             lessNumEventNumber += 1

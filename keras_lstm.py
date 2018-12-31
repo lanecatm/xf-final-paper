@@ -107,12 +107,14 @@ if args.run_opt == 1:
     #model.add(Embedding(vocabulary, hidden_size, input_length=num_steps, mask_zero = True))
     model.add(Masking(mask_value=0,input_shape=(num_steps, vocabulary)))
 
-    model.add(LSTM(hidden_size, return_sequences=True, input_shape=(train_X.shape[1], train_X.shape[2]), kernel_regularizer=regularizers.l2(l2_num) ))
+    #model.add(LSTM(hidden_size, return_sequences=True, input_shape=(train_X.shape[1], train_X.shape[2]), kernel_regularizer=regularizers.l2(l2_num) ))
+    model.add(LSTM(hidden_size, return_sequences=True, input_shape=(train_X.shape[1], train_X.shape[2]) ))
     if use_dropout:
         model.add(Dropout(0.2))
     #model.add(Dense(hidden_size2))
     model.add(Activation('relu'))
-    model.add(LSTM(hidden_size, return_sequences=False, kernel_regularizer=regularizers.l2(l2_num)))
+    #model.add(LSTM(hidden_size, return_sequences=False, kernel_regularizer=regularizers.l2(l2_num)))
+    model.add(LSTM(hidden_size, return_sequences=False))
     if use_dropout:
         model.add(Dropout(0.2))
     #model.add(TimeDistributed(Dense(vocabulary)))
@@ -128,7 +130,7 @@ if args.run_opt == 1:
     print("end model")
 
     print(model.summary())
-    checkpointer = ModelCheckpoint(filepath=data_path + '/bpi2012_epoch_{epoch:02d}_batch_' + str(batch_size) + '_l2_' + str(l2_num) + '_from_num_' + str(from_num) + '_use_dropout_' + str(use_dropout) + '_predict_left_time_v3' + '.hdf5', verbose=verbose)
+    checkpointer = ModelCheckpoint(filepath=data_path + '/bpi2012_epoch_{epoch:02d}_batch_' + str(batch_size) + '_l2_' + str(l2_num) + '_from_num_' + str(from_num) + '_use_dropout_' + str(use_dropout) + '_num_steps_' + str(num_steps) + '_predict_left_time_v3' + '.hdf5', verbose=verbose)
 
 
 
@@ -141,7 +143,7 @@ if args.run_opt == 1:
     print("epoch:", epoch_num, "batch_size:", batch_size, "l2", l2_num, "from_num", from_num, "use_dropout:", use_dropout)
     history = model.fit(train_X, train_y, epochs=epoch_num, batch_size=batch_size, validation_data=(test_X, test_y), verbose=verbose, shuffle=True, callbacks=[checkpointer])
 
-    save_data_from_db(history.history, dirPath = data_path, description = 'history_bpi2012_batch_' + str(batch_size) + '_l2_' + str(l2_num) + '_from_num_' + str(from_num) + '_use_dropout_' + str(use_dropout), version = "3")
+    save_data_from_db(history.history, dirPath = data_path, description = 'history_bpi2012_batch_' + str(batch_size) + '_l2_' + str(l2_num) + '_from_num_' + str(from_num) + '_use_dropout_' + str(use_dropout) + '_num_steps_' + str(num_steps), version = "3")
 
     #modelNameStr = "bpi2012_" + str(epoch_num) + "_" + str(batch_size) + "_" + "predict_left_timev3" + ".h5"
     #model.save('modelNameStr')
